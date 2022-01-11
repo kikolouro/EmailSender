@@ -16,8 +16,7 @@ try:
         user=config("DBUSER"),
         password=config("DBPW"),
         database=config("DB"),
-        autocommit=True,
-        auth_plugin='mysql_native_password'
+        autocommit=True
     )
 except Exception as e:
     logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
