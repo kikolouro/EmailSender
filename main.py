@@ -9,14 +9,18 @@ import logging
 logging.basicConfig(filename="/app/logs/emailsender.log",
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     filemode='w', level=logging.INFO)
-mydb = mysql.connector.connect(
-    host=config("DBHOST"),
-    user=config("DBUSER"),
-    password=config("DBPW"),
-    database=config("DB"),
-    autocommit=True
-)
+try:
 
+    mydb = mysql.connector.connect(
+        host=config("DBHOST"),
+        user=config("DBUSER"),
+        password=config("DBPW"),
+        database=config("DB"),
+        autocommit=True,
+        auth_plugin='mysql_native_password'
+    )
+except Exception as e:
+    logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
 q = queue.Queue()
 
 
