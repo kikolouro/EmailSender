@@ -45,16 +45,19 @@ def getLargestID(result):
 
 def handler(recipients, entry):
     logging.info("Data Handler initialized.")
-    
-    data = {
-        'name': entry[2].decode(),
-        'bodydata': {
-            'name': entry[2].decode(),
-            'value': entry[1].decode('utf8'),
-            'logid': entry[0],
-            'host': entry[3].decode()
+    try:
+        data = {
+            'name': entry[2],
+            'bodydata': {
+                'name': entry[2],
+                'value': entry[1].decode('utf8'),
+                'logid': entry[0],
+                'host': entry[3]
+            }
         }
-    }
+    except Exception as e:
+        logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
+
     # print(data)
     sendEmail(recipients,  {'email': config(
         'SENDER_EMAIL'), 'password': config('SENDER_PASSWORD')}, data)
