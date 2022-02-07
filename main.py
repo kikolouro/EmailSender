@@ -1,3 +1,4 @@
+import re
 import mysql.connector
 from decouple import UndefinedValueError, config
 import time
@@ -8,7 +9,12 @@ from sendemail import sendEmail
 import logging
 logging.basicConfig(filename="/app/logs/emailsender.log",
                     format='%(asctime)s - %(levelname)s - %(message)s',
-                    filemode='w', level=logging.INFO)
+                    filemode='a', level=logging.INFO)
+def getLargestID(result):
+    print(result)
+    aux = max(result, key=itemgetter(0))
+    return aux[0], aux[1]
+
 try:
 
     mydb = mysql.connector.connect(
@@ -18,6 +24,14 @@ try:
         database=config("DB"),
         autocommit=True
     )
+    mycursor = mydb.cursor(buffered=True)
+    print(mycursor)
+    logging.info("Initialing....")
+    mycursor.execute("select logid, value, items.name, hosts.name from history_log join items on items.itemid = history_log.itemid JOIN hosts on hosts.hostid = items.hostid JOIN hosts_groups on hosts.hostid = hosts_groups.hostid where items.type = 7 and value_type = 2 and value like '%ERROR%' and groupid = 17 order by clock desc")
+    myresult = mycursor.fetchall()
+    logging.info("First Query done.")
+    print(myresult)
+    lastid, lastvalue = getLargestID(myresult)
 except Exception as e:
     logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
 q = queue.Queue()
@@ -38,9 +52,6 @@ logs = findValues('LOG')
 recipients = findValues('RECIPIENT')
 
 
-def getLargestID(result):
-    aux = max(result, key=itemgetter(0))
-    return aux[0], aux[1]
 
 
 def handler(recipients, entry):
@@ -55,13 +66,12 @@ def handler(recipients, entry):
                 'host': entry[3]
             }
         }
+        # print(data)
+        sendEmail(recipients,  {'SENDER_APPKEY': config(
+            'SENDER_APPKEY'), 'SENDER_KEYPATH': config('SENDER_KEYPATH')}, data)
+        logging.info("Data Handler successfully exited")
     except Exception as e:
         logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
-
-    # print(data)
-    sendEmail(recipients,  {'email': config(
-        'SENDER_EMAIL'), 'password': config('SENDER_PASSWORD')}, data)
-    logging.info("Data Handler successfully exited")
 
 
 def queryString(logs):
@@ -71,14 +81,6 @@ def queryString(logs):
     return string[:-2]
 
 
-querystring = queryString(logs)
-mycursor = mydb.cursor(buffered=True)
-logging.info("Initialing....")
-mycursor.execute(
-    f"select logid, value, items.name, hosts.name from history_log JOIN items ON items.itemid = history_log.itemid JOIN hosts ON hosts.hostid = items.hostid where ({querystring}) order by clock desc limit 10")
-myresult = mycursor.fetchall()
-logging.info("First Query done.")
-lastid, lastvalue = getLargestID(myresult)
 
 
 def worker(recipients):
@@ -102,7 +104,7 @@ logging.info("Initialized.")
 while True:
 
     mycursor.execute(
-        f"select logid, value, items.name, hosts.name from history_log JOIN items ON items.itemid = history_log.itemid JOIN hosts ON hosts.hostid = items.hostid where ({querystring}) and logid > {lastid} order by clock desc limit 10")
+        f"select logid, value, items.name, hosts.name from history_log join items on items.itemid = history_log.itemid JOIN hosts on hosts.hostid = items.hostid JOIN hosts_groups on hosts.hostid = hosts_groups.hostid where items.type = 7 and value_type = 2 and value like '%ERROR%' and groupid = 17 and logid > {lastid} order by clock desc")
 
     myresult = mycursor.fetchall()
     if myresult:
