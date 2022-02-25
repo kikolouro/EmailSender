@@ -1,3 +1,5 @@
+from mailsenderpy.models import EmailContent, Attachment
+from mailsenderpy import MailSenderWAPIClient
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
@@ -7,21 +9,21 @@ import sys
 import pprint
 import logging
 pp = pprint.PrettyPrinter(indent=4)
-from mailsenderpy import MailSenderWAPIClient
-from mailsenderpy.models import EmailContent, Attachment
 
 
 def sendEmail(receivers, senderdata, data):
     try:
         msenderclient = MailSenderWAPIClient(
-    uri="https://msenderapi_qual.docdigitizer.com", 
-    appKey=senderdata['SENDER_APPKEY'], 
-    privateKey=senderdata['SENDER_KEYPATH'])
+            uri="https://msenderapi_qual.docdigitizer.com",
+            appKey=senderdata['SENDER_APPKEY'],
+            privateKey=senderdata['SENDER_KEYPATH'])
 
         msenderclient.postMessage(EmailContent(
-        toAddresses=receivers,
-        subject=f"Error on {data['name']} Log",
-        body=f"Error on log: {data['bodydata']['name']}\nLog Value: {data['bodydata']['value']}\nHost: {data['bodydata']['host']}"
-    ), schedule=None)
+            toAddresses=receivers,
+            subject=f"Error on {data['name']} Log",
+            body=f"Error on log: {data['bodydata']['name']}\nLog Value: {data['bodydata']['value']}\nHost: {data['bodydata']['host']}"
+        ), schedule=None)
+
     except Exception as e:
         logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
+    logging.info(f"[{data['logid']}] Queried to EmailSender.")
