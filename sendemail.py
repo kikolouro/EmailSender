@@ -26,4 +26,4 @@ def sendEmail(receivers, senderdata, data):
 
     except Exception as e:
         logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
-    logging.info(f"[{data['logid']}] Queried to EmailSender.")
+    logging.info(f"[{data['bodydata']['logid']}] Queried to EmailSender.")
