@@ -14,7 +14,7 @@ pp = pprint.PrettyPrinter(indent=4)
 def sendEmail(receivers, senderdata, data):
     try:
         msenderclient = MailSenderWAPIClient(
-            uri="https://msenderapi_qual.docdigitizer.com",
+            uri=f"https://{senderdata['SENDER_URI']}",
             appKey=senderdata['SENDER_APPKEY'],
             privateKey=senderdata['SENDER_KEYPATH'])
 

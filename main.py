@@ -11,10 +11,12 @@ logging.basicConfig(filename="/app/logs/emailsender.log",
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     filemode='a', level=logging.INFO)
 
+
 def getLargestID(result):
     print(result)
     aux = max(result, key=itemgetter(0))
     return aux[0], aux[1]
+
 
 def handler(recipients, entry):
     logging.info(f"[{entry[0]}] Data Handler initialized.")
@@ -30,7 +32,7 @@ def handler(recipients, entry):
         }
         # print(data)
         sendEmail(recipients,  {'SENDER_APPKEY': config(
-            'SENDER_APPKEY'), 'SENDER_KEYPATH': config('SENDER_KEYPATH')}, data)
+            'SENDER_APPKEY'), 'SENDER_KEYPATH': config('SENDER_KEYPATH'), "SENDER_URI": config('SENDER_URI')}, data)
         logging.info(f"[{entry[0]}] Data Handler successfully exited.")
     except Exception as e:
         logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
@@ -56,7 +58,8 @@ def worker(recipients):
         except Exception as e:
             logging.error("ErrorType : {}, Error : {}".format(
                 type(e).__name__, e))
-                
+
+
 def findValues(word):
     try:
         temp = []
@@ -78,12 +81,12 @@ try:
         autocommit=True
     )
     mycursor = mydb.cursor(buffered=True)
-    #print(mycursor)
+    # print(mycursor)
     logging.info("Initialing....")
     mycursor.execute("select logid, value, items.name, hosts.name from history_log join items on items.itemid = history_log.itemid JOIN hosts on hosts.hostid = items.hostid JOIN hosts_groups on hosts.hostid = hosts_groups.hostid where items.type = 7 and value_type = 2 and value like '%ERROR%' and groupid = 17 order by clock desc")
     myresult = mycursor.fetchall()
     logging.info("First Query done.")
-    #print(myresult)
+    # print(myresult)
     lastid, lastvalue = getLargestID(myresult)
 except Exception as e:
     logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
