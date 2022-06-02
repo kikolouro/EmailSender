@@ -7,9 +7,20 @@ import threading
 import queue
 from sendemail import sendEmail
 import logging
-logging.basicConfig(filename="/app/logs/emailsender.log",
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    filemode='a', level=logging.INFO)
+from logging.handlers import RotatingFileHandler
+
+logger = logging.getLogger('Rotation Log')
+logger.setLevel(logging.INFO)
+
+
+handler = RotatingFileHandler(
+    "/app/logs/emailsender.log", maxBytes=100000000, backupCount=10)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+ch = logging.StreamHandler()
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.addHandler(handler)
 
 
 def getLargestID(result):
@@ -19,7 +30,7 @@ def getLargestID(result):
 
 
 def handler(recipients, entry):
-    logging.info(f"[{entry[0]}] Data Handler initialized.")
+    logger.info(f"[{entry[0]}] Data Handler initialized.")
     try:
         data = {
             'name': entry[2],
@@ -33,9 +44,9 @@ def handler(recipients, entry):
         # print(data)
         sendEmail(recipients,  {'SENDER_APPKEY': config(
             'SENDER_APPKEY'), 'SENDER_KEYPATH': config('SENDER_KEYPATH'), "SENDER_URI": config('SENDER_URI')}, data)
-        logging.info(f"[{entry[0]}] Data Handler successfully exited.")
+        logger.info(f"[{entry[0]}] Data Handler successfully exited.")
     except Exception as e:
-        logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
+        logger.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
 
 
 def queryString(logs):
@@ -46,7 +57,7 @@ def queryString(logs):
 
 
 def worker(recipients):
-    logging.info("Email Worker initialized.")
+    logger.info("Email Worker initialized.")
     while True:
         try:
             item = q.get()
@@ -56,7 +67,7 @@ def worker(recipients):
             t.join()
             q.task_done()
         except Exception as e:
-            logging.error("ErrorType : {}, Error : {}".format(
+            logger.error("ErrorType : {}, Error : {}".format(
                 type(e).__name__, e))
 
 
@@ -82,14 +93,14 @@ try:
     )
     mycursor = mydb.cursor(buffered=True)
     # print(mycursor)
-    logging.info("Initialing....")
+    logger.info("Initialing....")
     mycursor.execute("select logid, value, items.name, hosts.name from history_log join items on items.itemid = history_log.itemid JOIN hosts on hosts.hostid = items.hostid JOIN hosts_groups on hosts.hostid = hosts_groups.hostid where items.type = 7 and value_type = 2 and value like '%ERROR%' and groupid = 17 order by clock desc")
     myresult = mycursor.fetchall()
-    logging.info("First Query done.")
+    logger.info("First Query done.")
     # print(myresult)
     lastid, lastvalue = getLargestID(myresult)
 except Exception as e:
-    logging.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
+    logger.error("ErrorType : {}, Error : {}".format(type(e).__name__, e))
 q = queue.Queue()
 
 
@@ -99,7 +110,7 @@ recipients = findValues('RECIPIENT')
 emailworker = threading.Thread(
     target=worker, args=(recipients,), daemon=True).start()
 
-logging.info("Initialized.")
+logger.info("Initialized.")
 while True:
 
     mycursor.execute(
